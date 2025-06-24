@@ -2,8 +2,8 @@ MacInDOSh (Macintosh Inside DOS) is an open source recreation of the Macintosh S
 
 Currently, MacInDOSh is built on top of MS-DOS, using the Borland Turbo C (TCC) development environment and compiler. It is currently INCOMPATIBLE with modern compilers such as GCC or Clang.
 
-Eventually, it will be moved to a more modern development environment and made into a standalone Operating System, but as of now, it is currently a DOS-only program. 
+We are currently working to bring MacInDOSh to its own native os, but that will take time! 
 
 !!! WARNING !!! 
 
-Attempting to close the program by pressing 'Q' within the app, for unknown reasons, takes down the ENTIRE computer/dos emulator, for currently unknown reasons.
+In its current state, attempting to close the program by pressing 'Q' within the app, for unknown reasons, takes down the ENTIRE computer/dos emulator, due to DOS only allowing 640k of Conventional Memory.
