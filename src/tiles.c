@@ -1,9 +1,5 @@
- #include <dos.h>
- #include <alloc.h>
- #include <string.h>
- #include <stdio.h>
- #include <stdlib.h>
- #include "video.h"
+#include "stdlib.h"
+#include "video.h"
 
  void drawTile(unsigned char *tile, int x, int y, int width, int height, int multiplier) {
 	int i, j;
@@ -42,44 +38,6 @@
 	}
  }
 
- void drawTileBackBuffer(unsigned char *tile, int x, int y, int width, int height, int multiplier) {
-	int i, j;
-	int k = 0;
-	int dx, dy;
-	for (i = 0; i < height; i++) {
-		for (j = 0; j < width; j++) {
-			int pixelColour = 0;
-			pixelColour = tile[k];
-			for (dy = 0; dy < multiplier; dy++) {
-				for (dx = 0; dx < multiplier; dx++) {
-					if (pixelColour < 2) { setPixelBackBuffer(x + j * multiplier + dx, y + i * multiplier + dy, pixelColour); }
-				}
-			}
-			k++;
-		}
-	}
-	drawBuffer(1);
- }
-
- void setTileBackBuffer(unsigned char *tile, int x, int y, int width, int height, int multiplier) {
-	int i, j;
-	int k = 0;
-	int dx, dy;
-	for (i = 0; i < height; i++) {
-		for (j = 0; j < width; j++) {
-			int pixelColour = 0;
-			pixelColour = tile[k];
-			for (dy = 0; dy < multiplier; dy++) {
-				for (dx = 0; dx < multiplier; dx++) {
-					if (pixelColour < 2) { setPixelBackBuffer(x + j * multiplier + dx, y + i * multiplier + dy, pixelColour); }
-				}
-			}
-			k++;
-		}
-	}
- }
-
-
  void drawTileNoFramebuf(unsigned char *tile, int x, int y, int width, int height, int multiplier) {
 	int i, j;
 	int k = 0;
@@ -97,6 +55,7 @@
 		}
 	}
  }
+
 
  unsigned char *fetchTile(int x, int y, int width, int height) {
 	int pixels = width * height;
@@ -117,6 +76,7 @@
 	return data;
 }
 
+/* Currently unused, but can be used to load tile files in the future when we have FS support.
 unsigned char *loadTileFile(const char *filename, int width, int height) {
 	FILE *file = fopen(filename, "rb");
 	int pixels = width * height;
@@ -141,3 +101,4 @@ unsigned char *loadTileFile(const char *filename, int width, int height) {
 	fclose(file);
 	return data;
 }
+*/
