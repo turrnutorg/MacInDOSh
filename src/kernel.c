@@ -13,16 +13,18 @@ int i, j;
 void main(void) {
     pit_init_for_polling();
     loadText();
-	drawBackground(2);
+	drawBackground(1);
 	setTile(happyMac, ((WIDTH / 2) - 13), ((HEIGHT / 2) - 16), 26, 32, 1);
 	drawBuffer();
 	delay_ms(3000);
 
-	drawBorderedRectNoFramebuf(160, 70, 320, 210, 0, 1, 2);
-	printNoFramebuf("Welcome to MacInDOSh.", 168, 78);
+	drawBorderedRectNoFramebuf(160, 70, 320, 210, 0, 15, 2);
+	printNoFramebuf("welcome to\nmacindosh", 168, 78);
 	delay_ms(2000);
-	
+
+	clearScreen();
 	drawDesktop();
 
-	while(1);
+	while(1) {
+	}
 }

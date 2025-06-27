@@ -9,7 +9,6 @@ ldparams   = -m elf_i386
 src_dir = src
 obj_dir = obj
 out_dir = out
-boot_dir = boot
 
 objs = \
 	$(obj_dir)/kernel-entry.o \
@@ -23,12 +22,12 @@ objs = \
 	$(obj_dir)/string.o \
 	$(obj_dir)/text.o \
 	$(obj_dir)/gui.o \
-	$(obj_dir)/stdlib.o
+	$(obj_dir)/stdlib.o \
 
 # --------- TARGET RULES ---------
 compile:
 	rm -rf $(out_dir) $(obj_dir)
-	mkdir -p $(out_dir) $(obj_dir) $(boot_dir)
+	mkdir -p $(out_dir) $(obj_dir)
 
 	# assemble bootloader (raw bin)
 	nasm -f bin -i $(src_dir)/ $(src_dir)/mbr.asm -o $(out_dir)/mbr.bin
@@ -61,11 +60,11 @@ compile:
 	dd if=/dev/zero bs=1 count=$$pad_size >> $(out_dir)/kernel.bin 2>/dev/null
 
 	# combine bootloader + kernel
-	cat $(out_dir)/mbr.bin $(out_dir)/kernel.bin > $(out_dir)/os-image.bin
+	cat $(out_dir)/mbr.bin $(out_dir)/kernel.bin > $(out_dir)/os-image.img
 
 # --------- RUNNING ---------
-run: compile
-	qemu-system-i386 -fda $(out_dir)/os-image.bin
+run: compile 
+	qemu-system-i386 -fda $(out_dir)/os-image.img -M pc -serial stdio -no-reboot -no-shutdown
 
 # --------- CLEAN ---------
 clean:

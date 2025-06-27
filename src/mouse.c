@@ -1,8 +1,7 @@
-// currently unused...
-#include <dos.h>
-#include <stdlib.h>
 #include "video.h"
 #include "mouse.h"
+#include "tiles.h"
+#include "text.h"
 
 int mouseX = 0;
 int mouseY = 0;
@@ -13,7 +12,10 @@ int middleClicked;
 
 int isEnabled = 1;
 
-static unsigned char *mousebackupTile;
+static unsigned char mousebackupTile[16 * 18];
+
+extern volatile unsigned char mouse_packet[3];
+extern volatile unsigned char packet_ready;
 
 unsigned char cursorPointer[] = {
 	1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -36,58 +38,65 @@ unsigned char cursorPointer[] = {
 	2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2
 };
 
-int mouseInit(void) {
-	union REGS regs;
-	regs.x.ax = 0x00;
-	int86(0x33, &regs, &regs);
-	if (regs.x.ax == 0xFFFF) {
-		return 0;
-	} else {
-		return 99;
-	}
-}
+extern unsigned char mouse_get_packet(unsigned char *b0,
+                                      unsigned char *b1,
+                                      unsigned char *b2);
 
 void pollMouse(void) {
-	union REGS regs;
-	regs.x.ax = 0x03;
-	int86(0x33, &regs, &regs);
-	mouseX = regs.x.cx;
-	mouseY = regs.x.dx;
-	if (regs.x.bx & 1) { leftClicked = 1; } else { leftClicked = 0; }
-	if (regs.x.bx & 2) { rightClicked = 1; } else { rightClicked = 0; }
-	if (regs.x.bx & 4) { middleClicked = 1; } else { middleClicked = 0; }
-	if (mouseX > WIDTH) { mouseX = HEIGHT; }
-	if (mouseY > WIDTH) { mouseY = HEIGHT; }
+	if (!packet_ready) return;
+	packet_ready = 0;
+
+	int dx = (char)mouse_packet[1];
+	int dy = (char)mouse_packet[2];
+	int b0 = mouse_packet[0];
+
+	mouseX += dx;
+	mouseY -= dy;
+
+    if (mouseX < 0) mouseX = 0;
+    if (mouseY < 0) mouseY = 0;
+    if (mouseX > WIDTH - 16) mouseX = WIDTH - 16;
+    if (mouseY > HEIGHT - 18) mouseY = HEIGHT - 18;
+
+    leftClicked   = b0 & 1;
+    rightClicked  = (b0 >> 1) & 1;
+    middleClicked = (b0 >> 2) & 1;
 }
 
+void fetchMouseTile(unsigned char *dest, int x, int y) {
+    int i, j, k = 0;
+    for (i = 0; i < 18; i++) {
+        for (j = 0; j < 16; j++) {
+            int pixel = fetchPixel(x + j, y + i);
+            dest[k++] = (unsigned char)pixel;
+        }
+    }
+}
 
 void setMouseTile(void) {
-	free(mousebackupTile);
-	mousebackupTile = NULL;
-	mousebackupTile = (unsigned char*)fetchTile(mouseX, mouseY, 16, 18);
+    fetchMouseTile(mousebackupTile, mouseX, mouseY);
 }
+
 void drawMouse(void) {
-	static int prevMouseX = -1;
-	static int prevMouseY = -1;
+    static int prevMouseX = -1;
+    static int prevMouseY = -1;
 
-	if ((prevMouseX == mouseX && prevMouseY == mouseY) || !isEnabled) { return; }
+    if ((prevMouseX == mouseX && prevMouseY == mouseY) || !isEnabled) return;
 
-	if (prevMouseX != -1 && prevMouseY != -1) {
-		drawTileNoFramebuf(mousebackupTile, prevMouseX, prevMouseY, 16, 18, 1);
-		free(mousebackupTile);
-		mousebackupTile = NULL;
-	}
+    if (prevMouseX != -1 && prevMouseY != -1) {
+        drawTileNoFramebuf(mousebackupTile, prevMouseX, prevMouseY, 16, 18, 1);
+    }
 
-	mousebackupTile = (unsigned char*)fetchTile(mouseX, mouseY, 16, 18);
+    fetchMouseTile(mousebackupTile, mouseX, mouseY);
+    drawTileNoFramebuf(cursorPointer, mouseX, mouseY, 16, 18, 1);
 
-	drawTileNoFramebuf(cursorPointer, mouseX, mouseY, 16, 18, 1);
-
-	prevMouseX = mouseX;
-	prevMouseY = mouseY;
+    prevMouseX = mouseX;
+    prevMouseY = mouseY;
 }
 
-void toggleMouse(void) { 
-	isEnabled = !isEnabled; 
-	if (!isEnabled) { drawTileNoFramebuf(mousebackupTile, mouseX, mouseY, 16, 18, 1); free(mousebackupTile); } 
+void toggleMouse(void) {
+    isEnabled = !isEnabled;
+    if (!isEnabled) {
+        drawTileNoFramebuf(mousebackupTile, mouseX, mouseY, 16, 18, 1);
+    }
 }
-

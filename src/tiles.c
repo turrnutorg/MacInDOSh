@@ -1,61 +1,54 @@
 #include "stdlib.h"
 #include "video.h"
 
- void drawTile(unsigned char *tile, int x, int y, int width, int height, int multiplier) {
-	int i, j;
+void drawTile(const unsigned char *tile, int x, int y, int width, int height, int scale) {
 	int k = 0;
-	int dx, dy;
-	for (i = 0; i < height; i++) {
-		for (j = 0; j < width; j++) {
-			int pixelColour = 0;
-			pixelColour = tile[k];
-			for (dy = 0; dy < multiplier; dy++) {
-				for (dx = 0; dx < multiplier; dx++) {
-					if (pixelColour < 2) { setPixel(x + j * multiplier + dx, y + i * multiplier + dy, pixelColour); }
+	for (int ty = 0; ty < height; ty++) {
+		for (int tx = 0; tx < width; tx++, k++) {
+			unsigned char color = tile[k];
+			if (color > 15) continue; // Skip transparency or invalid
+
+			for (int dy = 0; dy < scale; dy++) {
+				for (int dx = 0; dx < scale; dx++) {
+					setPixel(x + tx * scale + dx, y + ty * scale + dy, color);
 				}
 			}
-			k++;
 		}
 	}
 	drawBuffer();
- }
+}
 
- void setTile(unsigned char *tile, int x, int y, int width, int height, int multiplier) {
-	int i, j;
+void setTile(const unsigned char *tile, int x, int y, int width, int height, int scale) {
 	int k = 0;
-	int dx, dy;
-	for (i = 0; i < height; i++) {
-		for (j = 0; j < width; j++) {
-			int pixelColour = 0;
-			pixelColour = tile[k];
-			for (dy = 0; dy < multiplier; dy++) {
-				for (dx = 0; dx < multiplier; dx++) {
-					if (pixelColour < 2) { setPixel(x + j * multiplier + dx, y + i * multiplier + dy, pixelColour); }
+	for (int ty = 0; ty < height; ty++) {
+		for (int tx = 0; tx < width; tx++, k++) {
+			unsigned char color = tile[k];
+			if (color > 15) continue;
+
+			for (int dy = 0; dy < scale; dy++) {
+				for (int dx = 0; dx < scale; dx++) {
+					setPixel(x + tx * scale + dx, y + ty * scale + dy, color);
 				}
 			}
-			k++;
 		}
 	}
- }
+}
 
- void drawTileNoFramebuf(unsigned char *tile, int x, int y, int width, int height, int multiplier) {
-	int i, j;
+void drawTileNoFramebuf(const unsigned char *tile, int x, int y, int width, int height, int scale) {
 	int k = 0;
-	int dx, dy;
-	for (i = 0; i < height; i++) {
-		for (j = 0; j < width; j++) {
-			int pixelColour = 0;
-			pixelColour = tile[k];
-			for (dy = 0; dy < multiplier; dy++) {
-				for (dx = 0; dx < multiplier; dx++) {
-					if (pixelColour < 2) { plotPixel(x + j * multiplier + dx, y + i * multiplier + dy, pixelColour); }
+	for (int ty = 0; ty < height; ty++) {
+		for (int tx = 0; tx < width; tx++, k++) {
+			unsigned char color = tile[k];
+			if (color > 15) continue;
+
+			for (int dy = 0; dy < scale; dy++) {
+				for (int dx = 0; dx < scale; dx++) {
+					plotPixel(x + tx * scale + dx, y + ty * scale + dy, color);
 				}
 			}
-			k++;
 		}
 	}
- }
-
+}
 
  unsigned char *fetchTile(int x, int y, int width, int height) {
 	int pixels = width * height;
