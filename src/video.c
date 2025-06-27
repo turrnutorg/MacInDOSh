@@ -9,13 +9,50 @@
 
 unsigned char framebuffer[WIDTH * HEIGHT] = {0};
 
+#define CORNER_RADIUS 12
+
+static int isCornerBlocked(int x, int y) {
+    // top-left
+    if (x < CORNER_RADIUS && y < CORNER_RADIUS) {
+        int dx = CORNER_RADIUS - x - 1;
+        int dy = CORNER_RADIUS - y - 1;
+        if (dx*dx + dy*dy >= CORNER_RADIUS*CORNER_RADIUS) return 1;
+    }
+    // top-right
+    if (x >= WIDTH - CORNER_RADIUS && y < CORNER_RADIUS) {
+        int dx = x - (WIDTH - CORNER_RADIUS);
+        int dy = CORNER_RADIUS - y - 1;
+        if (dx*dx + dy*dy >= CORNER_RADIUS*CORNER_RADIUS) return 1;
+    }
+    // bottom-left
+    if (x < CORNER_RADIUS && y >= HEIGHT - CORNER_RADIUS) {
+        int dx = CORNER_RADIUS - x - 1;
+        int dy = y - (HEIGHT - CORNER_RADIUS);
+        if (dx*dx + dy*dy >= CORNER_RADIUS*CORNER_RADIUS) return 1;
+    }
+    // bottom-right
+    if (x >= WIDTH - CORNER_RADIUS && y >= HEIGHT - CORNER_RADIUS) {
+        int dx = x - (WIDTH - CORNER_RADIUS);
+        int dy = y - (HEIGHT - CORNER_RADIUS);
+        if (dx*dx + dy*dy >= CORNER_RADIUS*CORNER_RADIUS) return 1;
+    }
+    return 0;
+}
+
 static void setWritePlane(int plane) {
     outb(PLANE_MASK_PORT_INDEX, MAP_MASK_REGISTER);
     outb(PLANE_MASK_PORT_DATA, 1 << plane);
 }
 
+void setPixel(int x, int y, int color) {
+    if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
+    if (isCornerBlocked(x, y)) return; // stay the fuck out, mate
+    framebuffer[y * WIDTH + x] = color & 0x0F;
+}
+
 void plotPixel(int x, int y, int color) {
     if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
+    if (isCornerBlocked(x, y)) return; // yer not welcome here either
 
     unsigned int byte_offset = y * (WIDTH / 8) + (x / 8);
     unsigned char bit_mask = 1 << (7 - (x % 8));
@@ -29,11 +66,6 @@ void plotPixel(int x, int y, int color) {
             VIDEO_MEM[byte_offset] &= ~bit_mask;
         }
     }
-}
-
-void setPixel(int x, int y, int color) {
-    if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
-    framebuffer[y * WIDTH + x] = color & 0x0F;
 }
 
 int fetchPixel(int x, int y) {
