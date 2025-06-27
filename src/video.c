@@ -1,5 +1,6 @@
 #include "video.h"
 #include "port.h"
+#include <stdint.h>
 
 #define VIDEO_MEM ((unsigned char*)0xA0000)
 #define PLANE_MASK_PORT_INDEX 0x3C4
@@ -73,4 +74,15 @@ void clearBuffer(void) {
 void clearScreen(void) {
     clearBuffer();
     drawBuffer();
+}
+
+void set_palette_color(unsigned char index, unsigned char rgb_val) {
+    inb(0x3DA);  
+    outb(0x3C0, (index & 0x1F) | 0x20); 
+    outb(0x3C0, rgb_val);                  
+    inb(0x3DA);           
+}
+
+unsigned char ega_color(unsigned char r, unsigned char g, unsigned char b) {
+    return ((r & 0x03) << 4) | ((g & 0x03) << 2) | (b & 0x03);
 }

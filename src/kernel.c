@@ -1,6 +1,5 @@
 #include "text.h"
 #include "video.h"
-#include "video.h"
 #include "gui.h"
 #include "tiles.h"
 #include "render.h"
@@ -12,15 +11,13 @@ int i, j;
 
 void main(void) {
     pit_init_for_polling();
+	set_palette_color(0x09, ega_color(0, 3, 3));
+	set_palette_color(0x06, ega_color(2, 1, 0));
     loadText();
 	drawBackground(1);
-	setTile(happyMac, ((WIDTH / 2) - 13), ((HEIGHT / 2) - 16), 26, 32, 1);
+	setTile(happyMac, ((WIDTH / 2) - 26), ((HEIGHT / 2) - 32), 26, 32, 2);
 	drawBuffer();
 	delay_ms(3000);
-
-	drawBorderedRectNoFramebuf(160, 70, 320, 210, 0, 15, 2);
-	printNoFramebuf("welcome to\nmacindosh", 168, 78);
-	delay_ms(2000);
 
 	clearScreen();
 	drawDesktop();

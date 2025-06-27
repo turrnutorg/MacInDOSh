@@ -1,6 +1,8 @@
 #ifndef VIDEO_H
 #define VIDEO_H
 
+#include <stdint.h>
+
 #define WIDTH  640
 #define HEIGHT 480
 
@@ -17,5 +19,9 @@ void drawBuffer(void);
 void clearBuffer(void);
 
 void clearScreen(void);
+
+void set_palette_color(unsigned char index, unsigned char rgb_val);
+
+unsigned char ega_color(unsigned char r, unsigned char g, unsigned char b);
 
 #endif
