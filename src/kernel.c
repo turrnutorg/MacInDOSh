@@ -15,11 +15,12 @@ void main(void) {
 	set_palette_color(0x06, ega_color(2, 1, 0));
     loadText();
 	drawBackground(1);
-	setTile(happyMac, ((WIDTH / 2) - 26), ((HEIGHT / 2) - 32), 26, 32, 2);
+	setTile(happyMac, ((WIDTH / 2) - 12), ((HEIGHT / 2) - 16), 24, 32, 1);
 	drawBuffer();
 	delay_ms(3000);
-
-	clearScreen();
+	drawFilledRect(WIDTH / 4, HEIGHT / 4, WIDTH / 2, HEIGHT / 2, 15);
+	print("Welcome to MacInDOSh...", WIDTH / 4, HEIGHT / 4);
+	delay_ms(3000);
 	drawDesktop();
 
 	while(1) {

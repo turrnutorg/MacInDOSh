@@ -1,7 +1,7 @@
 ENTRY(_start)
 
 SECTIONS {
-    . = 0x8000;  /* tell the linker: this is where we're putting the code */
+    . = 0x1200;  /* tell the linker: this is where we're putting the code */
 
     .text : {
         *(.text.start)     /* where _start lives */

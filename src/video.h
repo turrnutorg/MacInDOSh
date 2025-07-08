@@ -24,4 +24,6 @@ void set_palette_color(unsigned char index, unsigned char rgb_val);
 
 unsigned char ega_color(unsigned char r, unsigned char g, unsigned char b);
 
+void invertColor(int x, int y);
+
 #endif

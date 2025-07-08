@@ -9,32 +9,26 @@
 
 unsigned char framebuffer[WIDTH * HEIGHT] = {0};
 
-#define CORNER_RADIUS 12
-
 static int isCornerBlocked(int x, int y) {
-    // top-left
-    if (x < CORNER_RADIUS && y < CORNER_RADIUS) {
-        int dx = CORNER_RADIUS - x - 1;
-        int dy = CORNER_RADIUS - y - 1;
-        if (dx*dx + dy*dy >= CORNER_RADIUS*CORNER_RADIUS) return 1;
+    if (x < 12 && y < 12) {
+        int dx = 12 - x - 1;
+        int dy = 12 - y - 1;
+        if (dx*dx + dy*dy >= 144) return 1;
     }
-    // top-right
-    if (x >= WIDTH - CORNER_RADIUS && y < CORNER_RADIUS) {
-        int dx = x - (WIDTH - CORNER_RADIUS);
-        int dy = CORNER_RADIUS - y - 1;
-        if (dx*dx + dy*dy >= CORNER_RADIUS*CORNER_RADIUS) return 1;
+    if (x >= 628 && y < 12) {
+        int dx = x - 628;
+        int dy = 12 - y - 1;
+        if (dx*dx + dy*dy >= 144) return 1;
     }
-    // bottom-left
-    if (x < CORNER_RADIUS && y >= HEIGHT - CORNER_RADIUS) {
-        int dx = CORNER_RADIUS - x - 1;
-        int dy = y - (HEIGHT - CORNER_RADIUS);
-        if (dx*dx + dy*dy >= CORNER_RADIUS*CORNER_RADIUS) return 1;
+    if (x < 12 && y >= 468) {
+        int dx = 12 - x - 1;
+        int dy = y - 468;
+        if (dx*dx + dy*dy >= 144) return 1;
     }
-    // bottom-right
-    if (x >= WIDTH - CORNER_RADIUS && y >= HEIGHT - CORNER_RADIUS) {
-        int dx = x - (WIDTH - CORNER_RADIUS);
-        int dy = y - (HEIGHT - CORNER_RADIUS);
-        if (dx*dx + dy*dy >= CORNER_RADIUS*CORNER_RADIUS) return 1;
+    if (x >= 628 && y >= 468) {
+        int dx = x - 628;
+        int dy = y - 468;
+        if (dx*dx + dy*dy >= 144) return 1;
     }
     return 0;
 }
@@ -46,13 +40,13 @@ static void setWritePlane(int plane) {
 
 void setPixel(int x, int y, int color) {
     if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
-    if (isCornerBlocked(x, y)) return; // stay the fuck out, mate
+    if (isCornerBlocked(x, y)) return;
     framebuffer[y * WIDTH + x] = color & 0x0F;
 }
 
 void plotPixel(int x, int y, int color) {
     if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
-    if (isCornerBlocked(x, y)) return; // yer not welcome here either
+    if (isCornerBlocked(x, y)) return;
 
     unsigned int byte_offset = y * (WIDTH / 8) + (x / 8);
     unsigned char bit_mask = 1 << (7 - (x % 8));
@@ -74,28 +68,32 @@ int fetchPixel(int x, int y) {
 }
 
 void drawBuffer(void) {
+    const int bytes_per_line = WIDTH / 8;
+
     for (int plane = 0; plane < 4; plane++) {
         setWritePlane(plane);
 
         for (int y = 0; y < HEIGHT; y++) {
-            for (int byte = 0; byte < WIDTH / 8; byte++) {
+            unsigned char *vram_ptr = VIDEO_MEM + y * bytes_per_line;
+            unsigned char *frame_ptr = framebuffer + y * WIDTH;
+
+            for (int byte = 0; byte < bytes_per_line; byte++) {
                 unsigned char out_byte = 0;
 
                 for (int bit = 0; bit < 8; bit++) {
                     int x = byte * 8 + bit;
-                    unsigned char color = framebuffer[y * WIDTH + x];
-                    unsigned char bit_val = (color >> plane) & 1;
-
-                    if (bit_val) {
+                    unsigned char color = frame_ptr[x];
+                    if ((color >> plane) & 1) {
                         out_byte |= (1 << (7 - bit));
                     }
                 }
 
-                VIDEO_MEM[y * (WIDTH / 8) + byte] = out_byte;
+                vram_ptr[byte] = out_byte;
             }
         }
     }
 }
+
 
 void clearBuffer(void) {
     for (unsigned int i = 0; i < WIDTH * HEIGHT; i++) {
@@ -118,3 +116,11 @@ void set_palette_color(unsigned char index, unsigned char rgb_val) {
 unsigned char ega_color(unsigned char r, unsigned char g, unsigned char b) {
     return ((r & 0x03) << 4) | ((g & 0x03) << 2) | (b & 0x03);
 }
+
+void invertColor(int x, int y) {
+    if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
+    int current = fetchPixel(x, y);
+    int inverted = 15 - (current & 0x0F);
+    setPixel(x, y, inverted);
+}
+

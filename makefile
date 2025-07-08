@@ -29,11 +29,14 @@ compile:
 	rm -rf $(out_dir) $(obj_dir)
 	mkdir -p $(out_dir) $(obj_dir)
 
-	# assemble bootloader (raw bin)
-	nasm -f bin -i $(src_dir)/ $(src_dir)/mbr.asm -o $(out_dir)/mbr.bin
-
 	# assemble kernel entrypoint
 	nasm $(nasmparams) $(src_dir)/kernel-entry.asm -o $(obj_dir)/kernel-entry.o
+
+	# assemble stage1 MBR (raw bin)
+	nasm -f bin -i $(src_dir)/ $(src_dir)/mbr.asm -o $(out_dir)/mbr.bin
+
+	# assemble stage2 bootloader
+	nasm -f bin -i $(src_dir)/ $(src_dir)/stage2.asm -o $(out_dir)/stage2.bin
 
 	# compile c files
 	gcc $(gccparams) -c $(src_dir)/kernel.c -o $(obj_dir)/kernel.o
@@ -52,19 +55,25 @@ compile:
 	ld $(ldparams) -T linker.ld -o $(out_dir)/kernel.elf $(objs)
 
 	# flatten to binary
-	objcopy -O binary $(out_dir)/kernel.elf $(out_dir)/kernel.bin
+	objcopy -O binary -j .text -j .rodata -j .data out/kernel.elf out/kernel.bin
 
 	# pad kernel to 512-sector align
 	@actual_size=$$(stat -c%s $(out_dir)/kernel.bin); \
 	pad_size=$$(( (512 - ($$actual_size % 512)) % 512 )); \
 	dd if=/dev/zero bs=1 count=$$pad_size >> $(out_dir)/kernel.bin 2>/dev/null
 
-	# combine bootloader + kernel
-	cat $(out_dir)/mbr.bin $(out_dir)/kernel.bin > $(out_dir)/os-image.img
+	# pad kernel to 512-sector align
+	@actual_size=$$(stat -c%s $(out_dir)/stage2.bin); \
+	pad_size=$$(( (512 - ($$actual_size % 512)) % 512 )); \
+	dd if=/dev/zero bs=1 count=$$pad_size >> $(out_dir)/stage2.bin 2>/dev/null
+
+	# combine mbr + stage2 + kernel
+	cat $(out_dir)/mbr.bin $(out_dir)/stage2.bin $(out_dir)/kernel.bin > $(out_dir)/os-image.img
 
 # --------- RUNNING ---------
 run: compile 
-	qemu-system-i386 -fda $(out_dir)/os-image.img -M pc -serial stdio -no-reboot -no-shutdown
+	qemu-system-i386 -drive format=raw,file=$(out_dir)/os-image.img -M pc -serial stdio -no-reboot -no-shutdown
+
 
 # --------- CLEAN ---------
 clean:
