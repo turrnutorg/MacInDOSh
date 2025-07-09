@@ -20,7 +20,13 @@ void printNoFramebuf(const unsigned char *s, int x, int y);
 void printChicago(const unsigned char *s, int x, int y);
 void printChicagoNoFB(const unsigned char *s, int x, int y);
 
+void printChicagoGreyed(const unsigned char *s, int x, int y);
+void printChicagoGreyedNoFB(const unsigned char *s, int x, int y);
+
 void printFont(Glyph *font, const unsigned char *s, int x, int y, int spacing);
 void printFontNoFB(Glyph *font, const unsigned char *s, int x, int y, int spacing);
+
+void printFontGreyed(Glyph *font, const unsigned char *s, int x, int y, int spacing);
+void printFontGreyedNoFB(Glyph *font, const unsigned char *s, int x, int y, int spacing);
 
 #endif

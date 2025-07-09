@@ -72,7 +72,7 @@ compile:
 
 # --------- RUNNING ---------
 run: compile 
-	qemu-system-i386 -drive format=raw,file=$(out_dir)/os-image.img -M pc -serial stdio -no-reboot -no-shutdown
+	qemu-system-i386 -drive format=raw,file=$(out_dir)/os-image.img -M pc
 
 
 # --------- CLEAN ---------

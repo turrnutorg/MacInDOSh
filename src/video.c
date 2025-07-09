@@ -33,15 +33,15 @@ static int isCornerBlocked(int x, int y) {
     return 0;
 }
 
-static void setWritePlane(int plane) {
-    outb(PLANE_MASK_PORT_INDEX, MAP_MASK_REGISTER);
-    outb(PLANE_MASK_PORT_DATA, 1 << plane);
-}
+// static void setWritePlane(int plane) {
+//     outb(PLANE_MASK_PORT_INDEX, MAP_MASK_REGISTER);
+//     outb(PLANE_MASK_PORT_DATA, 1 << plane);
+// }
 
 void setPixel(int x, int y, int color) {
     if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
     if (isCornerBlocked(x, y)) return;
-    framebuffer[y * WIDTH + x] = color & 0x0F;
+    framebuffer[y * WIDTH + x] = color ? 1 : 0;
 }
 
 void plotPixel(int x, int y, int color) {
@@ -51,14 +51,20 @@ void plotPixel(int x, int y, int color) {
     unsigned int byte_offset = y * (WIDTH / 8) + (x / 8);
     unsigned char bit_mask = 1 << (7 - (x % 8));
 
-    for (int plane = 0; plane < 4; plane++) {
-        setWritePlane(plane);
+    // plane switching logic for colour
+    // for (int plane = 0; plane < 4; plane++) {
+    //     setWritePlane(plane);
+    //     if (color & (1 << plane)) {
+    //         VIDEO_MEM[byte_offset] |= bit_mask;
+    //     } else {
+    //         VIDEO_MEM[byte_offset] &= ~bit_mask;
+    //     }
+    // }
 
-        if (color & (1 << plane)) {
-            VIDEO_MEM[byte_offset] |= bit_mask;
-        } else {
-            VIDEO_MEM[byte_offset] &= ~bit_mask;
-        }
+    if (color) {
+        VIDEO_MEM[byte_offset] |= bit_mask;
+    } else {
+        VIDEO_MEM[byte_offset] &= ~bit_mask;
     }
 }
 
@@ -70,30 +76,41 @@ int fetchPixel(int x, int y) {
 void drawBuffer(void) {
     const int bytes_per_line = WIDTH / 8;
 
-    for (int plane = 0; plane < 4; plane++) {
-        setWritePlane(plane);
+    // coloured logic
+    // for (int plane = 0; plane < 4; plane++) {
+    //     setWritePlane(plane);
+    //     for (int y = 0; y < HEIGHT; y++) {
+    //         unsigned char *vram_ptr = VIDEO_MEM + y * bytes_per_line;
+    //         unsigned char *frame_ptr = framebuffer + y * WIDTH;
+    //         for (int byte = 0; byte < bytes_per_line; byte++) {
+    //             unsigned char out_byte = 0;
+    //             for (int bit = 0; bit < 8; bit++) {
+    //                 int x = byte * 8 + bit;
+    //                 unsigned char color = frame_ptr[x];
+    //                 if ((color >> plane) & 1) {
+    //                     out_byte |= (1 << (7 - bit));
+    //                 }
+    //             }
+    //             vram_ptr[byte] = out_byte;
+    //         }
+    //     }
+    // }
 
-        for (int y = 0; y < HEIGHT; y++) {
-            unsigned char *vram_ptr = VIDEO_MEM + y * bytes_per_line;
-            unsigned char *frame_ptr = framebuffer + y * WIDTH;
-
-            for (int byte = 0; byte < bytes_per_line; byte++) {
-                unsigned char out_byte = 0;
-
-                for (int bit = 0; bit < 8; bit++) {
-                    int x = byte * 8 + bit;
-                    unsigned char color = frame_ptr[x];
-                    if ((color >> plane) & 1) {
-                        out_byte |= (1 << (7 - bit));
-                    }
+    for (int y = 0; y < HEIGHT; y++) {
+        unsigned char *vram_ptr = VIDEO_MEM + y * bytes_per_line;
+        unsigned char *frame_ptr = framebuffer + y * WIDTH;
+        for (int byte = 0; byte < bytes_per_line; byte++) {
+            unsigned char out_byte = 0;
+            for (int bit = 0; bit < 8; bit++) {
+                int x = byte * 8 + bit;
+                if (frame_ptr[x]) {
+                    out_byte |= (1 << (7 - bit));
                 }
-
-                vram_ptr[byte] = out_byte;
             }
+            vram_ptr[byte] = out_byte;
         }
     }
 }
-
 
 void clearBuffer(void) {
     for (unsigned int i = 0; i < WIDTH * HEIGHT; i++) {
@@ -107,10 +124,10 @@ void clearScreen(void) {
 }
 
 void set_palette_color(unsigned char index, unsigned char rgb_val) {
-    inb(0x3DA);  
-    outb(0x3C0, (index & 0x1F) | 0x20); 
-    outb(0x3C0, rgb_val);                  
-    inb(0x3DA);           
+    inb(0x3DA);
+    outb(0x3C0, (index & 0x1F) | 0x20);
+    outb(0x3C0, rgb_val);
+    inb(0x3DA);
 }
 
 unsigned char ega_color(unsigned char r, unsigned char g, unsigned char b) {
@@ -120,7 +137,7 @@ unsigned char ega_color(unsigned char r, unsigned char g, unsigned char b) {
 void invertColor(int x, int y) {
     if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) return;
     int current = fetchPixel(x, y);
-    int inverted = 15 - (current & 0x0F);
+    // int inverted = 15 - (current & 0x0F);
+    int inverted = !current;
     setPixel(x, y, inverted);
 }
-

@@ -11,6 +11,8 @@ Glyph glyphs_chicago[256];
 static unsigned char decompressed_tiles_geneva[256][144];
 static unsigned char decompressed_tiles_chicago[256][144];
 
+int draw = 0;
+
 static void decompressTile(unsigned char *dst, const int8_t *rle) {
     int idx = 0;
     for (int i = 0; rle[i] != 0 && idx < 144; ++i) {
@@ -60,6 +62,39 @@ static inline void blitGlyphTightNoFB(const Glyph *g, int x, int y) {
             if (g->bmp[row*12 + col] != 17)
                 plotPixel(x + (col - g->x0), y + row, 0);
 }
+
+static inline void blitGlyphGreyed(const Glyph *g, int x, int y) {
+    if (!g->bmp) return;
+
+    draw = !draw;
+
+    for (int col = g->x0; col <= g->x1; ++col) {
+        for (int row = 0; row < 12; ++row) {
+            if (g->bmp[row * 12 + col] != 17) {
+                if (((x + (col - g->x0)) + y + row) % 2 == draw) {
+                    setPixel(x + (col - g->x0), y + row, 0);
+                }
+            }
+        }
+    }
+}
+
+static inline void blitGlyphGreyedNoFB(const Glyph *g, int x, int y) {
+    if (!g->bmp) return;
+
+    draw = !draw;
+
+    for (int col = g->x0; col <= g->x1; ++col) {
+        for (int row = 0; row < 12; ++row) {
+            if (g->bmp[row * 12 + col] != 17) {
+                if (((x + (col - g->x0)) + y + row) % 2 == draw) {
+                    plotPixel(x + (col - g->x0), y + row, 0);
+                }
+            }
+        }
+    }
+}
+
 
 #define LOAD_GLYPH(ch, name, fontset, buffer) \
     decompressTile(buffer[(unsigned char)(ch)], name); \
@@ -337,6 +372,49 @@ void printFontNoFB(Glyph *font, const unsigned char *s, int x, int y, int spacin
     }
 }
 
+void printFontGreyed(Glyph *font, const unsigned char *s, int x, int y, int spacing) {
+    const int baseX = x;
+
+    draw = !draw;
+
+    while (*s) {
+        unsigned char c = *s++;
+
+        if (c == '\n') { y += 12; x = baseX; continue; }
+        if (c == ' ')  { x += 4; continue; }
+
+        const Glyph *g = &font[c];
+        if (!g->bmp)   { x += 13; continue; }
+
+        if (x > WIDTH - 12) { y += 12; x = baseX; }
+
+        blitGlyphGreyed(g, x, y);
+        x += g->adv + spacing;
+    }
+    drawBuffer();
+}
+
+void printFontGreyedNoFB(Glyph *font, const unsigned char *s, int x, int y, int spacing) {
+    const int baseX = x;
+
+    draw = !draw;
+
+    while (*s) {
+        unsigned char c = *s++;
+
+        if (c == '\n') { y += 12; x = baseX; continue; }
+        if (c == ' ')  { x += 4; continue; }
+
+        const Glyph *g = &font[c];
+        if (!g->bmp)   { x += 13; continue; }
+
+        if (x > WIDTH - 12) { y += 12; x = baseX; }
+
+        blitGlyphGreyedNoFB(g, x, y);
+        x += g->adv + spacing;
+    }
+}
+
 void print(const unsigned char *s, int x, int y) {
     printFont(glyphs_geneva, s, x, y, 0);
 }
@@ -352,3 +430,12 @@ void printChicago(const unsigned char *s, int x, int y) {
 void printChicagoNoFB(const unsigned char *s, int x, int y) {
     printFontNoFB(glyphs_chicago, s, x, y, 1);
 }
+
+void printChicagoGreyed(const unsigned char *s, int x, int y) {
+    printFontGreyed(glyphs_chicago, s, x, y, 1);
+}
+
+void printChicagoGreyedNoFB(const unsigned char *s, int x, int y) {
+    printFontGreyedNoFB(glyphs_chicago, s, x, y, 1);
+}
+
