@@ -4,29 +4,22 @@
 #include "tiles.h"
 #include "text.h"
 #include "stdlib.h"
+#include "fonts.h"
 
-typedef struct {
-    const unsigned char *bmp;
-    unsigned char x0;
-    unsigned char x1;
-    unsigned char adv;
-} Glyph;
+Glyph glyphs_geneva[256];
+Glyph glyphs_chicago[256];
+static unsigned char decompressed_tiles_geneva[256][144];
+static unsigned char decompressed_tiles_chicago[256][144];
 
-static Glyph glyphs[256];
-static unsigned char decompressed_tiles[256][144];
-
-// decompress signed RLE to 12x12 bitmap (144 bytes)
 static void decompressTile(unsigned char *dst, const int8_t *rle) {
     int idx = 0;
     for (int i = 0; rle[i] != 0 && idx < 144; ++i) {
         int count = rle[i];
         unsigned char val = count > 0 ? 17 : 0;
         count = count > 0 ? count : -count;
-
         for (int j = 0; j < count && idx < 144; ++j)
             dst[idx++] = val;
     }
-
     while (idx < 144)
         dst[idx++] = 17;
 }
@@ -54,7 +47,6 @@ static void analyseGlyph(Glyph *g) {
 
 static inline void blitGlyphTight(const Glyph *g, int x, int y) {
     if (!g->bmp) return;
-
     for (int col = g->x0; col <= g->x1; ++col)
         for (int row = 0; row < 12; ++row)
             if (g->bmp[row*12 + col] != 17)
@@ -63,163 +55,300 @@ static inline void blitGlyphTight(const Glyph *g, int x, int y) {
 
 static inline void blitGlyphTightNoFB(const Glyph *g, int x, int y) {
     if (!g->bmp) return;
-
     for (int col = g->x0; col <= g->x1; ++col)
         for (int row = 0; row < 12; ++row)
             if (g->bmp[row*12 + col] != 17)
                 plotPixel(x + (col - g->x0), y + row, 0);
 }
 
-#define LOAD_GLYPH(ch, name) \
-    decompressTile(decompressed_tiles[(unsigned char)(ch)], name##_rle); \
-    glyphs[(unsigned char)(ch)].bmp = decompressed_tiles[(unsigned char)(ch)]
+#define LOAD_GLYPH(ch, name, fontset, buffer) \
+    decompressTile(buffer[(unsigned char)(ch)], name); \
+    fontset[(unsigned char)(ch)].bmp = buffer[(unsigned char)(ch)]
 
-void loadText(void) {
+void loadGenevaFont(void) {
     for (int i = 0; i < 256; ++i) {
-        glyphs[i].bmp = NULL;
-        glyphs[i].adv = 13;
-        glyphs[i].x0  = 0;
-        glyphs[i].x1  = 11;
+        glyphs_geneva[i].bmp = NULL;
+        glyphs_geneva[i].adv = 13;
+        glyphs_geneva[i].x0  = 0;
+        glyphs_geneva[i].x1  = 11;
     }
- 
-    LOAD_GLYPH(' ', tile_space);
-    LOAD_GLYPH('.', tile_sym_period);
 
-    LOAD_GLYPH('!', tile_sym_excl);
-    LOAD_GLYPH('"', tile_sym_quote);
-    LOAD_GLYPH('#', tile_sym_hash);
-    LOAD_GLYPH('$', tile_sym_dollar);
-    LOAD_GLYPH('%', tile_sym_percent);
-    LOAD_GLYPH('&', tile_sym_amp);
-    LOAD_GLYPH('\'', tile_sym_apos);
-    LOAD_GLYPH('(', tile_sym_lparen);
-    LOAD_GLYPH(')', tile_sym_rparen);
-    LOAD_GLYPH('*', tile_sym_aster);
-    LOAD_GLYPH('+', tile_sym_plus);
-    LOAD_GLYPH(',', tile_sym_comma);
-    LOAD_GLYPH('-', tile_sym_minus);
-    LOAD_GLYPH('/', tile_sym_slash);
-    LOAD_GLYPH(':', tile_sym_colon);
-    LOAD_GLYPH(';', tile_sym_semicolon);
-    LOAD_GLYPH('<', tile_sym_lt);
-    LOAD_GLYPH('=', tile_sym_equals);
-    LOAD_GLYPH('>', tile_sym_gt);
-    LOAD_GLYPH('?', tile_sym_qmark);
-    LOAD_GLYPH('@', tile_sym_at);
-    LOAD_GLYPH('[', tile_sym_lbrack);
-    LOAD_GLYPH('\\', tile_sym_bslash);
-    LOAD_GLYPH(']', tile_sym_rbrack);
-    LOAD_GLYPH('^', tile_sym_caret);
-    LOAD_GLYPH('_', tile_sym_underscore);
-    LOAD_GLYPH('`', tile_sym_backtick);
-    LOAD_GLYPH('{', tile_sym_lbrace);
-    LOAD_GLYPH('|', tile_sym_pipe);
-    LOAD_GLYPH('}', tile_sym_rbrace);
-    LOAD_GLYPH('~', tile_sym_tilde);
+    // LOAD_GLYPH('\b', geneva_sym_command, glyphs_geneva, decompressed_tiles_geneva);
 
-    LOAD_GLYPH('0', tile_num_0);
-    LOAD_GLYPH('1', tile_num_1);
-    LOAD_GLYPH('2', tile_num_2);
-    LOAD_GLYPH('3', tile_num_3);
-    LOAD_GLYPH('4', tile_num_4);
-    LOAD_GLYPH('5', tile_num_5);
-    LOAD_GLYPH('6', tile_num_6);
-    LOAD_GLYPH('7', tile_num_7);
-    LOAD_GLYPH('8', tile_num_8);
-    LOAD_GLYPH('9', tile_num_9);
+    LOAD_GLYPH(' ', geneva_space, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('.', geneva_sym_period, glyphs_geneva, decompressed_tiles_geneva);
 
-    LOAD_GLYPH('A', tile_cap_a);
-    LOAD_GLYPH('B', tile_cap_b);
-    LOAD_GLYPH('C', tile_cap_c);
-    LOAD_GLYPH('D', tile_cap_d);
-    LOAD_GLYPH('E', tile_cap_e);
-    LOAD_GLYPH('F', tile_cap_f);
-    LOAD_GLYPH('G', tile_cap_g);
-    LOAD_GLYPH('H', tile_cap_h);
-    LOAD_GLYPH('I', tile_cap_i);
-    LOAD_GLYPH('J', tile_cap_j);
-    LOAD_GLYPH('K', tile_cap_k);
-    LOAD_GLYPH('L', tile_cap_l);
-    LOAD_GLYPH('M', tile_cap_m);
-    LOAD_GLYPH('N', tile_cap_n);
-    LOAD_GLYPH('O', tile_cap_o);
-    LOAD_GLYPH('P', tile_cap_p);
-    LOAD_GLYPH('Q', tile_cap_q);
-    LOAD_GLYPH('R', tile_cap_r);
-    LOAD_GLYPH('S', tile_cap_s);
-    LOAD_GLYPH('T', tile_capt);
-    LOAD_GLYPH('U', tile_cap_u);
-    LOAD_GLYPH('V', tile_cap_v);
-    LOAD_GLYPH('W', tile_cap_w);
-    LOAD_GLYPH('X', tile_cap_x);
-    LOAD_GLYPH('Y', tile_cap_y);
-    LOAD_GLYPH('Z', tile_cap_z);
+    LOAD_GLYPH('!', geneva_sym_excl, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('"', geneva_sym_quote, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('#', geneva_sym_hash, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('$', geneva_sym_dollar, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('%', geneva_sym_percent, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('&', geneva_sym_amp, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('\'', geneva_sym_apos, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('(', geneva_sym_lparen, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH(')', geneva_sym_rparen, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('*', geneva_sym_aster, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('+', geneva_sym_plus, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH(',', geneva_sym_comma, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('-', geneva_sym_minus, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('/', geneva_sym_slash, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH(':', geneva_sym_colon, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH(';', geneva_sym_semicolon, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('<', geneva_sym_lt, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('=', geneva_sym_equals, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('>', geneva_sym_gt, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('?', geneva_sym_qmark, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('@', geneva_sym_at, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('[', geneva_sym_lbrack, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('\\', geneva_sym_bslash, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH(']', geneva_sym_rbrack, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('^', geneva_sym_caret, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('_', geneva_sym_underscore, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('`', geneva_sym_backtick, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('{', geneva_sym_lbrace, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('|', geneva_sym_pipe, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('}', geneva_sym_rbrace, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('~', geneva_sym_tilde, glyphs_geneva, decompressed_tiles_geneva);
 
-    LOAD_GLYPH('a', tile_low_a);
-    LOAD_GLYPH('b', tile_low_b);
-    LOAD_GLYPH('c', tile_low_c);
-    LOAD_GLYPH('d', tile_low_d);
-    LOAD_GLYPH('e', tile_low_e);
-    LOAD_GLYPH('f', tile_low_f);
-    LOAD_GLYPH('g', tile_low_g);
-    LOAD_GLYPH('h', tile_low_h);
-    LOAD_GLYPH('i', tile_low_i);
-    LOAD_GLYPH('j', tile_low_j);
-    LOAD_GLYPH('k', tile_low_k);
-    LOAD_GLYPH('l', tile_low_l);
-    LOAD_GLYPH('m', tile_low_m);
-    LOAD_GLYPH('n', tile_low_n);
-    LOAD_GLYPH('o', tile_low_o);
-    LOAD_GLYPH('p', tile_low_p);
-    LOAD_GLYPH('q', tile_low_q);
-    LOAD_GLYPH('r', tile_low_r);
-    LOAD_GLYPH('s', tile_low_s);
-    LOAD_GLYPH('t', tile_lowt);
-    LOAD_GLYPH('u', tile_low_u);
-    LOAD_GLYPH('v', tile_low_v);
-    LOAD_GLYPH('w', tile_low_w);
-    LOAD_GLYPH('x', tile_low_x);
-    LOAD_GLYPH('y', tile_low_y);
-    LOAD_GLYPH('z', tile_low_z);
+    LOAD_GLYPH('0', geneva_num_0, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('1', geneva_num_1, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('2', geneva_num_2, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('3', geneva_num_3, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('4', geneva_num_4, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('5', geneva_num_5, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('6', geneva_num_6, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('7', geneva_num_7, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('8', geneva_num_8, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('9', geneva_num_9, glyphs_geneva, decompressed_tiles_geneva);
 
-    for (int i = 0; i < 256; ++i) analyseGlyph(&glyphs[i]);
+    LOAD_GLYPH('A', geneva_cap_a, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('B', geneva_cap_b, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('C', geneva_cap_c, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('D', geneva_cap_d, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('E', geneva_cap_e, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('F', geneva_cap_f, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('G', geneva_cap_g, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('H', geneva_cap_h, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('I', geneva_cap_i, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('J', geneva_cap_j, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('K', geneva_cap_k, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('L', geneva_cap_l, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('M', geneva_cap_m, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('N', geneva_cap_n, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('O', geneva_cap_o, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('P', geneva_cap_p, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('Q', geneva_cap_q, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('R', geneva_cap_r, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('S', geneva_cap_s, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('T', geneva_capt, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('U', geneva_cap_u, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('V', geneva_cap_v, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('W', geneva_cap_w, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('X', geneva_cap_x, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('Y', geneva_cap_y, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('Z', geneva_cap_z, glyphs_geneva, decompressed_tiles_geneva);
+
+    LOAD_GLYPH('a', geneva_low_a, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('b', geneva_low_b, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('c', geneva_low_c, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('d', geneva_low_d, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('e', geneva_low_e, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('f', geneva_low_f, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('g', geneva_low_g, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('h', geneva_low_h, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('i', geneva_low_i, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('j', geneva_low_j, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('k', geneva_low_k, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('l', geneva_low_l, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('m', geneva_low_m, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('n', geneva_low_n, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('o', geneva_low_o, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('p', geneva_low_p, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('q', geneva_low_q, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('r', geneva_low_r, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('s', geneva_low_s, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('t', geneva_lowt, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('u', geneva_low_u, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('v', geneva_low_v, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('w', geneva_low_w, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('x', geneva_low_x, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('y', geneva_low_y, glyphs_geneva, decompressed_tiles_geneva);
+    LOAD_GLYPH('z', geneva_low_z, glyphs_geneva, decompressed_tiles_geneva);
+
+    for (int i = 0; i < 128; ++i)
+        glyphs_geneva[i].adv = font_width_geneva[i];
+
+    for (int i = 0; i < 256; ++i)
+        analyseGlyph(&glyphs_geneva[i]);
 }
 
-void print(const unsigned char *s, int x, int y) {
+void loadChicagoFont(void) {
+    for (int i = 0; i < 256; ++i) {
+        glyphs_chicago[i].bmp = NULL;
+        glyphs_chicago[i].adv = 13;
+        glyphs_chicago[i].x0  = 0;
+        glyphs_chicago[i].x1  = 11;
+    }
+    LOAD_GLYPH('\b', chicago_sym_command, glyphs_chicago, decompressed_tiles_chicago);
+
+    LOAD_GLYPH(' ', chicago_space, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('.', chicago_sym_period, glyphs_chicago, decompressed_tiles_chicago);
+
+    LOAD_GLYPH('!', chicago_sym_excl, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('"', chicago_sym_quote, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('#', chicago_sym_hash, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('$', chicago_sym_dollar, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('%', chicago_sym_percent, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('&', chicago_sym_amp, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('\'', chicago_sym_apos, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('(', chicago_sym_lparen, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH(')', chicago_sym_rparen, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('*', chicago_sym_aster, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('+', chicago_sym_plus, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH(',', chicago_sym_comma, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('-', chicago_sym_minus, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('/', chicago_sym_slash, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH(':', chicago_sym_colon, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH(';', chicago_sym_semicolon, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('<', chicago_sym_lt, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('=', chicago_sym_equals, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('>', chicago_sym_gt, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('?', chicago_sym_qmark, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('@', chicago_sym_at, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('[', chicago_sym_lbrack, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('\\', chicago_sym_bslash, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH(']', chicago_sym_rbrack, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('^', chicago_sym_caret, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('_', chicago_sym_underscore, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('`', chicago_sym_backtick, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('{', chicago_sym_lbrace, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('|', chicago_sym_pipe, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('}', chicago_sym_rbrace, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('~', chicago_sym_tilde, glyphs_chicago, decompressed_tiles_chicago);
+
+    LOAD_GLYPH('0', chicago_num_0, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('1', chicago_num_1, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('2', chicago_num_2, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('3', chicago_num_3, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('4', chicago_num_4, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('5', chicago_num_5, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('6', chicago_num_6, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('7', chicago_num_7, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('8', chicago_num_8, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('9', chicago_num_9, glyphs_chicago, decompressed_tiles_chicago);
+
+    LOAD_GLYPH('A', chicago_cap_a, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('B', chicago_cap_b, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('C', chicago_cap_c, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('D', chicago_cap_d, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('E', chicago_cap_e, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('F', chicago_cap_f, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('G', chicago_cap_g, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('H', chicago_cap_h, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('I', chicago_cap_i, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('J', chicago_cap_j, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('K', chicago_cap_k, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('L', chicago_cap_l, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('M', chicago_cap_m, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('N', chicago_cap_n, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('O', chicago_cap_o, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('P', chicago_cap_p, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('Q', chicago_cap_q, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('R', chicago_cap_r, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('S', chicago_cap_s, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('T', chicago_capt, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('U', chicago_cap_u, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('V', chicago_cap_v, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('W', chicago_cap_w, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('X', chicago_cap_x, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('Y', chicago_cap_y, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('Z', chicago_cap_z, glyphs_chicago, decompressed_tiles_chicago);
+
+    LOAD_GLYPH('a', chicago_low_a, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('b', chicago_low_b, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('c', chicago_low_c, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('d', chicago_low_d, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('e', chicago_low_e, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('f', chicago_low_f, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('g', chicago_low_g, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('h', chicago_low_h, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('i', chicago_low_i, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('j', chicago_low_j, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('k', chicago_low_k, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('l', chicago_low_l, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('m', chicago_low_m, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('n', chicago_low_n, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('o', chicago_low_o, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('p', chicago_low_p, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('q', chicago_low_q, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('r', chicago_low_r, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('s', chicago_low_s, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('t', chicago_lowt, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('u', chicago_low_u, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('v', chicago_low_v, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('w', chicago_low_w, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('x', chicago_low_x, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('y', chicago_low_y, glyphs_chicago, decompressed_tiles_chicago);
+    LOAD_GLYPH('z', chicago_low_z, glyphs_chicago, decompressed_tiles_chicago);
+
+    for (int i = 0; i < 128; ++i)
+        glyphs_chicago[i].adv = font_width_chicago[i];
+
+    for (int i = 0; i < 256; ++i)
+        analyseGlyph(&glyphs_chicago[i]);
+}
+
+void printFont(Glyph *font, const unsigned char *s, int x, int y, int spacing) {
     const int baseX = x;
 
     while (*s) {
         unsigned char c = *s++;
 
         if (c == '\n') { y += 12; x = baseX; continue; }
-        if (c == ' ')  { x += 4;  continue; }
+        if (c == ' ')  { x += 4; continue; }
 
-        const Glyph *g = &glyphs[c];
+        const Glyph *g = &font[c];
         if (!g->bmp)   { x += 13; continue; }
 
         if (x > WIDTH - 12) { y += 12; x = baseX; }
 
         blitGlyphTight(g, x, y);
-        x += g->adv;
+        x += g->adv + spacing;
     }
     drawBuffer();
 }
 
-void printNoFramebuf(const unsigned char *s, int x, int y) {
+void printFontNoFB(Glyph *font, const unsigned char *s, int x, int y, int spacing) {
     const int baseX = x;
 
     while (*s) {
         unsigned char c = *s++;
 
         if (c == '\n') { y += 12; x = baseX; continue; }
-        if (c == ' ')  { x += 4;  continue; }
+        if (c == ' ')  { x += 4; continue; }
 
-        const Glyph *g = &glyphs[c];
+        const Glyph *g = &font[c];
         if (!g->bmp)   { x += 13; continue; }
 
         if (x > WIDTH - 12) { y += 12; x = baseX; }
 
         blitGlyphTightNoFB(g, x, y);
-        x += g->adv;
+        x += g->adv + spacing;
     }
+}
+
+void print(const unsigned char *s, int x, int y) {
+    printFont(glyphs_geneva, s, x, y, 0);
+}
+
+void printNoFramebuf(const unsigned char *s, int x, int y) {
+    printFontNoFB(glyphs_geneva, s, x, y, 0);
+}
+
+void printChicago(const unsigned char *s, int x, int y) {
+    printFont(glyphs_chicago, s, x, y, 1);
+}
+
+void printChicagoNoFB(const unsigned char *s, int x, int y) {
+    printFontNoFB(glyphs_chicago, s, x, y, 1);
 }

@@ -41,6 +41,7 @@
 	17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17
 };
 
+/* old coloured logo 
 unsigned char logo[] = {
 	17, 17, 17, 17, 17, 17, 17, 17, 2, 2, 17, 17, 17, 17, 17, 17,
 	17, 17, 17, 17, 17, 17, 17, 2, 2, 17, 17, 17, 17, 17, 17, 17,
@@ -58,6 +59,21 @@ unsigned char logo[] = {
 	17, 17, 17, 3, 3, 3, 3, 3, 3, 3, 3, 3, 17, 17, 17, 17,
 	17, 17, 17, 17, 3, 3, 3, 17, 3, 3, 3, 17, 17, 17, 17, 17,
 	17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17
+};
+*/
+
+unsigned char logo[] = {
+	17, 17, 17, 17, 17, 0, 0, 17, 17, 
+	17, 17, 17, 17, 0, 0, 17, 17, 17, 
+	17, 17, 17, 17, 0, 17, 17, 17, 17, 
+	17, 0, 0, 0, 17, 0, 0, 0, 17,
+	0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 17, 17,
+	0, 0, 0, 0, 0, 0, 0, 17, 17, 
+	0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0,
+	17, 0, 0, 0, 0, 0, 0, 0, 17, 
+	17, 17, 0, 0, 17, 0, 0, 17, 17
 };
 
 struct MenuBar menu_bar = {0};
@@ -81,17 +97,26 @@ struct Menu createMenu(char *title, char *labels[], VoidFunc funcs[], int count)
 
 
 void drawMenuBar(void) {
-    int i, j = 0;
-    int x = 48;
+    int x = 43;
 
-	drawFilledRect(0, 0, 640, 20, 15);
-	drawTile(logo, 16, 2, 16, 16, 1);
+    drawFilledRect(0, 0, 640, 20, 15);
+    setTile(logo, 20, 4, 9, 11, 1);
+    for (int i = 0; i < WIDTH; i++) {
+        setPixel(i, 20, 0);
+    }
 
-    for (i = 0; i < menu_bar.menu_count; i++) {
-	    print(menu_bar.menus[i].title, x, 4);
-        j = strlen(menu_bar.menus[i].title);
+    for (int i = 0; i < menu_bar.menu_count; i++) {
+        const unsigned char *title = menu_bar.menus[i].title;
+        printChicago(title, x, 6);
 
-        x += j * 8 + 8;
+        int w = 0;
+        for (const unsigned char *p = title; *p; ++p) {
+            if (*p == ' ') { w += 4; continue; }
+            const Glyph *g = &glyphs_chicago[*p];
+            w += g->bmp ? g->adv + 1 : 13;
+        }
+
+        x += w + 13;
     }
 }
 
@@ -124,9 +149,17 @@ VoidFunc fileFuncs[] = {dummyFunc, dummyFunc, dummyFunc};
 char *editMenuItems[] = {"Cut", "Copy", "Paste"};
 VoidFunc editFuncs[] = {dummyFunc, dummyFunc, dummyFunc};
 
+char *viewMenuItems[] = {"Open", "Save", "Exit"};
+VoidFunc viewFuncs[] = {dummyFunc, dummyFunc, dummyFunc};
+
+char *specialMenuItems[] = {"Cut", "Copy", "Paste"};
+VoidFunc specialFuncs[] = {dummyFunc, dummyFunc, dummyFunc};
+
 void drawDesktop(void) {
 	createMenu("File", fileMenuItems, fileFuncs, 3);
-createMenu("Edit", editMenuItems, editFuncs, 3);
+	createMenu("Edit", editMenuItems, editFuncs, 3);
+	createMenu("View", viewMenuItems, viewFuncs, 3);
+	createMenu("Special", specialMenuItems, specialFuncs, 3);
 
 	clearScreen();
 	drawBackground(1);

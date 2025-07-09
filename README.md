@@ -1,31 +1,22 @@
-MacInDOSh (Macintosh Inside DOS) is an open source recreation of the Macintosh System Software 1.0 intended for x86 based machines. 
+MacInDOSh (Macintosh Inside DOS) is an open source recreation of the Macintosh System Software 1.0 - System 6 intended for x86 based machines. 
 
 In its current state, it CAN boot to desktop, though not much else, as currently we have yet to reimplement KB/m controls. 
 
-also
-colours
-so more like 
-system 6
+boots on any x86 cpu, needs 1mb of ram, a fdd, and any competent VGA card (qemu reccomended)
 
-boots on any x86 cpu
-needs 1mb of ram
-and a fdd
-and also any competent VGA card
-does not work on VirtualBox (crashes it)
-not tested on real hw
 does work on qemu
 
-to build
-run ```bash install-packages.sh``` (because dependencies, yay)
-then run ```make run``` (clean is redundant, this already rm -rf's the stuff)
+to build run ```bash install-packages.sh``` (because dependencies, yay), then run ```make run```.
 
-written by tuvalutorture
-maintained by... also tuvalutorture
-as part of the turrnut open source org
+written and maintained by tuvalutorture
 
-licensed under gpl v3
-in other words
-pls dont steal :P
-and please open source anything else made with it
+licensed under gpl v3, contributions welcome
 
-contributions welcome
+### Not affiliated with Apple, Inc.
+
+Macintosh, Finder, Mac OS, are all trademarks of Apple Incorporated.
+
+### Screenshots
+![Starting screen](images/happymac.png)
+![Welcome screen](images/welcome.png)
+![Desktop!](images/desktop.png)

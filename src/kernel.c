@@ -13,13 +13,15 @@ void main(void) {
     pit_init_for_polling();
 	set_palette_color(0x09, ega_color(0, 3, 3));
 	set_palette_color(0x06, ega_color(2, 1, 0));
-    loadText();
+    loadGenevaFont();
+	loadChicagoFont();
 	drawBackground(1);
 	setTile(happyMac, ((WIDTH / 2) - 12), ((HEIGHT / 2) - 16), 24, 32, 1);
 	drawBuffer();
 	delay_ms(3000);
 	drawFilledRect(WIDTH / 4, HEIGHT / 4, WIDTH / 2, HEIGHT / 2, 15);
-	print("Welcome to MacInDOSh...", WIDTH / 4, HEIGHT / 4);
+	print("Welcome to MacInDOSh.\nWritten by tuvalutorture.", WIDTH / 4, HEIGHT / 4);
+	print("Not affiliated with apple.\nMacintosh, Finder, Mac OS, are all trademarks of Apple Incorporated.", WIDTH / 4, HEIGHT / 3);
 	delay_ms(3000);
 	drawDesktop();
 
